@@ -11,7 +11,7 @@ import streamlit as st
 DB = "mi_semana.db"
 
 st.set_page_config(
-    page_title="Mi Semana · Quilichao",
+    page_title="Mi Semana",
     page_icon="🌿",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -28,68 +28,17 @@ CSS = """
     
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
 
-    /* Hero Header */
-    .hero {
-        display:flex; gap:16px; align-items:center;
-        background: linear-gradient(135deg, #1F6F5C, #2E8B74);
-        padding: 20px 24px; border-radius: 20px; color: #fff; margin-bottom: 20px;
-        box-shadow: 0 8px 24px rgba(31,111,92,.2);
+    /* Pestañas de navegación elegantes */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px; background-color: transparent; border-bottom: 1px solid #E4D9C6; padding-bottom: 10px; margin-bottom: 20px;
     }
-    .hero-emoji { font-size: 32px; }
-    .hero-title { font-size: 24px; font-weight: 800; line-height: 1.1; margin: 0; }
-    .hero-sub { font-size: 14px; opacity: .9; margin-top: 4px; }
-
-    /* ========================================================
-       MENÚ TIPO GRID (CUADRÍCULA LLAMATIVA)
-       ======================================================== */
-    div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 12px !important;
-        background: transparent !important;
-        margin-bottom: 25px !important;
+    .stTabs [data-baseweb="tab"] {
+        height: 50px; background-color: #FFFFFF; border: 1px solid #EFE7DA; border-radius: 12px;
+        padding: 0 15px; font-weight: 700; color: #5C564C;
     }
-    
-    /* Ocultar el circulito del radio button */
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child { display: none !important; }
-    
-    /* Estilo de las Tarjetas del Menú */
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-        background: #FFFFFF !important;
-        border: 2px solid #EFE7DA !important;
-        border-radius: 16px !important;
-        padding: 15px 5px !important;
-        text-align: center !important;
-        height: 90px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: center !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
-        transition: all 0.2s ease !important;
-        cursor: pointer;
+    .stTabs [aria-selected="true"] {
+        background-color: #1F6F5C !important; color: #FFFFFF !important; border-color: #1F6F5C !important;
     }
-    
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label p {
-        font-size: 14px !important;
-        font-weight: 700 !important;
-        color: #5C564C !important;
-        margin: 0 !important;
-        line-height: 1.2 !important;
-    }
-
-    /* Tarjeta ACTIVA (Brilla en verde) */
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
-        background: #1F6F5C !important;
-        border-color: #1F6F5C !important;
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 8px 20px rgba(31,111,92,0.3) !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] p {
-        color: #FFFFFF !important;
-        font-weight: 800 !important;
-    }
-    /* ======================================================== */
 
     /* Tarjetas de métricas */
     .card {
@@ -183,7 +132,7 @@ def cargar_ejemplos():
                  (e[0], e[1], e[2], e[3], e[4], date.today().isoformat()))
 
 def hero(titulo, subtitulo, emoji="🌿"):
-    st.markdown(f'<div class="hero"><div class="hero-emoji">{emoji}</div><div><div class="hero-title">{titulo}</div><div class="hero-sub">{subtitulo}</div></div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align: center; margin-bottom: 20px;"><h1 style="color: #1F6F5C; font-weight: 800; margin: 0;">{emoji} {titulo}</h1><p style="color: #8A8071; font-size: 14px; margin-top: 4px;">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 def tarjeta(col, etiqueta, valor, pie=""):
     col.markdown(f'<div class="card" style="text-align:center;"><div class="card-lbl">{etiqueta}</div><div class="card-num">{valor}</div><div class="card-pie">{pie}</div></div>', unsafe_allow_html=True)
@@ -211,20 +160,16 @@ hoy = date.today()
 inicio_semana = lunes(hoy)
 fin_semana = inicio_semana + timedelta(days=6)
 
-# EL NUEVO MENÚ EN GRID
-nav = st.radio(
-    "Navegar",
-    ["🌞\nHoy", "✍️\nCapturar", "🧩\nÁreas", "📁\nProyectos", "🗓️\nPlan", "🔄\nRevisión"],
-    horizontal=True,
-    label_visibility="collapsed"
-)
-st.write("") 
+# TÍTULO SIEMPRE VISIBLE
+hero("Mi Semana", f"Hola, {nombre} · {cfg_get('ciudad')}", "🌿")
 
-# ---------------------------------------------------------------- VISTAS
+# ---------------------------------------------------------------- PESTAÑAS DE NAVEGACIÓN
+tab_hoy, tab_capturar, tab_areas, tab_proyectos, tab_plan, tab_revision = st.tabs([
+    "🌞 Hoy", "✍️ Capturar", "🧩 Áreas", "📁 Proyectos", "🗓️ Plan", "🔄 Revisión"
+])
 
-if nav == "🌞\nHoy":
-    hero(f"Hola, {nombre} 👋", f"{fecha_es(hoy).capitalize()} · {cfg_get('ciudad')}", "🌿")
-
+# ---------------------------------------------------------------- VISTA: HOY
+with tab_hoy:
     with st.form("captura_rapida", clear_on_submit=True):
         texto = st.text_input("Captura rápida", placeholder="Escribe algo y presiona Enter…", label_visibility="collapsed")
         if st.form_submit_button("Guardar en bandeja ✨"):
@@ -274,8 +219,6 @@ if nav == "🌞\nHoy":
                     ejecutar("UPDATE items SET fecha=?, prioridad=? WHERE id=?", (hoy.isoformat(), n, item_id))
                 st.success("✅ Prioridades actualizadas")
                 st.rerun()
-    else:
-        st.caption("No hay tareas pendientes para priorizar.")
 
     st.markdown("### 🧮 ¿Tu semana es humanamente posible?")
     if total_cap_min == 0: st.info("Ve a **Plan** y dime cuántas horas reales tienes.")
@@ -285,8 +228,8 @@ if nav == "🌞\nHoy":
         estado = "✅ Va bien" if pct <= 0.85 else ("⚠️ Justa" if pct <= 1.0 else "🚨 Sobrecargada")
         st.caption(f"{carga/60:.1f} h de {total_cap_min/60:.0f} h reales · {estado}")
 
-elif nav == "✍️\nCapturar":
-    hero("Capturar", "Saca todo de la cabeza.", "✍️")
+# ---------------------------------------------------------------- VISTA: CAPTURAR
+with tab_capturar:
     lista_areas = areas(); etiquetas = [f"{a['emoji']} {a['nombre']}" for a in lista_areas]; mapa = {et: a["id"] for et, a in zip(etiquetas, lista_areas)}
     with st.form("nuevo_item", clear_on_submit=True):
         titulo = st.text_input("¿Qué es?")
@@ -306,8 +249,8 @@ elif nav == "✍️\nCapturar":
         if c3.button("Mañana", key=f"bm_{b['id']}"): ejecutar("UPDATE items SET fecha=? WHERE id=?", (man_s, b["id"])); st.rerun()
         if c4.button("🗑", key=f"bd_{b['id']}"): ejecutar("UPDATE items SET estado='archivado' WHERE id=?", (b["id"],)); st.rerun()
 
-elif nav == "🧩\nÁreas":
-    hero("Áreas de vida", "Las partes de tu vida.", "🧩")
+# ---------------------------------------------------------------- VISTA: ÁREAS
+with tab_areas:
     for a in areas():
         pend = consultar("SELECT COUNT(*) c FROM items WHERE estado='pendiente' AND area_id=?", (a["id"],))[0]["c"]
         with st.expander(f"{a['emoji']} {a['nombre']} · {pend} pendientes"):
@@ -321,8 +264,8 @@ elif nav == "🧩\nÁreas":
                 try: ejecutar("INSERT INTO areas (nombre, emoji, meta) VALUES (?,?,?)", (n.strip(), e.strip() or "🌱", m.strip())); st.rerun()
                 except sqlite3.IntegrityError: st.warning("Ya existe un área.")
 
-elif nav == "📁\nProyectos":
-    hero("Proyectos", "Cosas grandes de más de un día.", "📁")
+# ---------------------------------------------------------------- VISTA: PROYECTOS
+with tab_proyectos:
     lista_areas = areas(); etiquetas = [f"{a['emoji']} {a['nombre']}" for a in lista_areas]; mapa = {et: a["id"] for et, a in zip(etiquetas, lista_areas)}
     with st.form("nuevo_proyecto", clear_on_submit=True):
         nombre_p = st.text_input("Nombre del proyecto"); area_et = st.selectbox("Área", etiquetas); nota = st.text_input("¿Para qué?")
@@ -332,10 +275,11 @@ elif nav == "📁\nProyectos":
         abiertas = consultar("SELECT COUNT(*) c FROM items WHERE proyecto_id=? AND estado='pendiente'", (p["id"],))[0]["c"]
         st.markdown(f'<div class="card"><b>{p["nombre"]}</b><br><span style="color:#8A8071;font-size:13px">{abiertas} tareas abiertas</span></div>', unsafe_allow_html=True)
 
-elif nav == "🗓️\nPlan":
+# ---------------------------------------------------------------- VISTA: PLAN
+with tab_plan:
     st.session_state.setdefault("offset_semana", 0)
     inicio = lunes() + timedelta(weeks=st.session_state["offset_semana"]); fin = inicio + timedelta(days=6)
-    hero("Plan semanal", f"Del {fecha_es(inicio)} al {fecha_es(fin)}", "🗓️")
+    st.markdown(f"**Semana del {fecha_es(inicio)} al {fecha_es(fin)}**")
     
     b1, _, b3 = st.columns([0.25, 0.5, 0.25])
     if b1.button("← Antes"): st.session_state["offset_semana"] -= 1; st.rerun()
@@ -362,8 +306,8 @@ elif nav == "🗓️\nPlan":
         elif total_carga / total_cap > 0.85: st.warning("⚠️ Semana justa. Evita agregar cosas.")
         else: st.success("✅ Semana humanamente posible.")
 
-elif nav == "🔄\nRevisión":
-    hero("Revisión", "Cierra la semana sin juicio.", "🔄")
+# ---------------------------------------------------------------- VISTA: REVISIÓN
+with tab_revision:
     hechos = consultar("SELECT COUNT(*) c FROM items WHERE estado='hecho'")[0]["c"]
     c1, c2 = st.columns(2); tarjeta(c1, "Cosas hechas", hechos, "en total"); tarjeta(c2, "Semana", fecha_es(lunes(hoy)).capitalize(), "para revisar")
 
