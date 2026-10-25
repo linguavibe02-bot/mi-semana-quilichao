@@ -1,15 +1,7 @@
-# -*- coding: utf-8 -*-
-"""
-MI SEMANA — "Tu vida entera en una semana realista"
-Fase 1 · Lógica Original Completa + Diseño App
-"""
-
-import json
-import sqlite3
-from datetime import date, timedelta
 import streamlit as st
-
-DB = "mi_semana.db"
+import sqlite3
+import json
+from datetime import date, timedelta
 
 # 1. Configuración Mobile-First
 st.set_page_config(
@@ -19,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. CSS de App (Colores originales, diseño moderno)
+# 2. CSS Premium (Diseño de App)
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
@@ -29,6 +21,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
     html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
 
+    /* Header */
     .hero {
         background: linear-gradient(135deg, #1F6F5C, #2E8B74);
         padding: 20px 24px; border-radius: 20px; color: #fff; margin-bottom: 20px;
@@ -37,6 +30,7 @@ st.markdown("""
     .hero-title { font-size: 24px; font-weight: 800; margin: 0; }
     .hero-sub { font-size: 14px; opacity: .9; margin-top: 5px; }
 
+    /* Tarjetas */
     .card {
         background: #fff; border-radius: 16px; padding: 16px 18px;
         box-shadow: 0 4px 14px rgba(0,0,0,.05); border: 1px solid #EFE7DA; margin-bottom: 12px;
@@ -45,6 +39,7 @@ st.markdown("""
     .card-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #8A8071; }
     .card-pie { font-size: 13px; color: #5C564C; margin-top: 4px; }
 
+    /* Botones de Navegación Inferior */
     div.stButton > button {
         background-color: #fff; color: #1F6F5C; border: 1px solid #E4D9C6;
         border-radius: 12px; padding: 8px 2px; width: 100%; font-weight: 700; font-size: 11px;
@@ -53,11 +48,15 @@ st.markdown("""
     div.stButton > button[kind="primary"] {
         background-color: #1F6F5C; color: #fff; border: none; box-shadow: 0 4px 10px rgba(31,111,92,0.3);
     }
+    
+    /* Formularios */
     div[data-testid="stForm"] { background: #fff; border-radius: 16px; padding: 15px; border: 1px solid #EFE7DA; }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Base de Datos (ESQUEMA ORIGINAL RESTAURADO)
+# 3. Base de Datos (Lógica Original Completa)
+DB = "mi_semana.db"
+
 AREAS_DEFECTO = [
     ("Trabajo", "💼"), ("Hogar", "🏠"), ("Familia", "👨‍👩‍👧"),
     ("Pareja", "💞"), ("Salud", "🩺"), ("Hobbies", "🎨"),
@@ -110,8 +109,7 @@ def init_db():
     c = conn()
     c.executescript(ESQUEMA)
     c.commit()
-    total = c.execute("SELECT COUNT(*) c FROM areas").fetchone()["c"]
-    if total == 0:
+    if c.execute("SELECT COUNT(*) c FROM areas").fetchone()["c"] == 0:
         c.executemany("INSERT INTO areas (nombre, emoji) VALUES (?,?)", AREAS_DEFECTO)
         c.commit()
     c.close()
@@ -141,14 +139,10 @@ def fecha_es(d):
 def capacidad_semana(inicio):
     row = consultar("SELECT capacidad FROM semanas WHERE inicio=?", (inicio,))
     if not row: return {}
-    crudo = json.loads(row[0]["capacidad"] or "{}")
-    return {int(k): v for k, v in crudo.items()}
+    return {int(k): v for k, v in json.loads(row[0]["capacidad"] or "{}").items()}
 
 def carga_semana(inicio, fin):
-    rows = consultar(
-        "SELECT area_id, COALESCE(SUM(duracion_min),0) m FROM items "
-        "WHERE estado='pendiente' AND fecha BETWEEN ? AND ? GROUP BY area_id", (inicio, fin),
-    )
+    rows = consultar("SELECT area_id, COALESCE(SUM(duracion_min),0) m FROM items WHERE estado='pendiente' AND fecha BETWEEN ? AND ? GROUP BY area_id", (inicio, fin))
     return {r["area_id"]: r["m"] for r in rows}
 
 def guardar_semana(inicio, capacidad=None, prioridades=None, nota=None):
@@ -157,36 +151,28 @@ def guardar_semana(inicio, capacidad=None, prioridades=None, nota=None):
     if capacidad is not None: actual["capacidad"] = json.dumps(capacidad)
     if prioridades is not None: actual["prioridades"] = json.dumps(prioridades)
     if nota is not None: actual["nota"] = nota
-    ejecutar(
-        "INSERT OR REPLACE INTO semanas (inicio, capacidad, prioridades, nota) VALUES (?,?,?,?)",
-        (inicio, actual["capacidad"], actual["prioridades"], actual["nota"]),
-    )
+    ejecutar("INSERT OR REPLACE INTO semanas (inicio, capacidad, prioridades, nota) VALUES (?,?,?,?)", (inicio, actual["capacidad"], actual["prioridades"], actual["nota"]))
 
 init_db()
 
-# 4. Funciones UI
+# 4. UI Helpers
 def hero(titulo, subtitulo, emoji="🌿"):
-    st.markdown(
-        f'<div class="hero"><div style="font-size:32px; margin-bottom:5px;">{emoji}</div><div class="hero-title">{titulo}</div><div class="hero-sub">{subtitulo}</div></div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown(f'<div class="hero"><div style="font-size:32px; margin-bottom:5px;">{emoji}</div><div class="hero-title">{titulo}</div><div class="hero-sub">{subtitulo}</div></div>', unsafe_allow_html=True)
 
 def tarjeta(col, etiqueta, valor, pie=""):
-    col.markdown(
-        f'<div class="card" style="text-align:center;"><div class="card-lbl">{etiqueta}</div><div class="card-num">{valor}</div><div class="card-pie">{pie}</div></div>',
-        unsafe_allow_html=True,
-    )
+    col.markdown(f'<div class="card" style="text-align:center;"><div class="card-lbl">{etiqueta}</div><div class="card-num">{valor}</div><div class="card-pie">{pie}</div></div>', unsafe_allow_html=True)
 
-# 5. Vistas
-if "pagina" not in st.session_state:
-    st.session_state.pagina = "hoy"
+# 5. Control de Navegación
+if "pagina" not in st.session_state: st.session_state.pagina = "hoy"
+hoy = date.today()
 
+# ONBOARDING
 if not cfg_get("onboarding"):
     hero("Mi Semana", "Tu vida entera en una semana realista.", "🌿")
     with st.form("onb"):
         nombre = st.text_input("¿Cómo te llamas?", placeholder="Ej: Camila")
         ciudad = st.text_input("¿Dónde vives?", value="Santander de Quilichao")
-        horas = st.slider("¿Cuántas horas reales tienes a la semana?", 5, 80, 35, 5)
+        horas = st.slider("Horas reales que tienes a la semana", 5, 80, 35, 5)
         if st.form_submit_button("Empezar 🌱"):
             cfg_set("nombre", nombre.strip() or "Vecino")
             cfg_set("ciudad", ciudad.strip())
@@ -196,10 +182,12 @@ if not cfg_get("onboarding"):
     st.stop()
 
 nombre = cfg_get("nombre")
-hoy = date.today()
-inicio = lunes(hoy)
-fin = inicio + timedelta(days=6)
+inicio_semana = lunes(hoy)
+fin_semana = inicio_semana + timedelta(days=6)
 
+# 6. VISTAS
+
+# --- VISTA: HOY ---
 if st.session_state.pagina == "hoy":
     hero(f"Hola, {nombre} 👋", f"{fecha_es(hoy).capitalize()} · {cfg_get('ciudad')}", "🌿")
 
@@ -212,9 +200,9 @@ if st.session_state.pagina == "hoy":
 
     pendientes = consultar("SELECT COUNT(*) c FROM items WHERE estado='pendiente'")[0]["c"]
     prios = consultar("SELECT * FROM items WHERE estado='pendiente' AND fecha=? AND prioridad>0 ORDER BY prioridad", (hoy.isoformat(),))
-    cap = capacidad_semana(inicio.isoformat())
+    cap = capacidad_semana(inicio_semana.isoformat())
     total_cap_min = sum(cap.values()) * 60
-    carga = sum(carga_semana(inicio.isoformat(), fin.isoformat()).values())
+    carga = sum(carga_semana(inicio_semana.isoformat(), fin_semana.isoformat()).values())
 
     c1, c2, c3 = st.columns(3)
     tarjeta(c1, "Pendientes", pendientes, "en tus áreas")
@@ -223,7 +211,7 @@ if st.session_state.pagina == "hoy":
     tarjeta(c3, "Prioridades", f"{len(prios)}/3", "para hoy")
 
     st.markdown("### 🎯 Mis 3 prioridades de hoy")
-    if not prios: st.info("Aún no eliges. Máximo 3.")
+    if not prios: st.info("Aún no eliges. Máximo 3: el resto puede esperar.")
     for p in prios:
         fila = consultar("SELECT emoji FROM areas WHERE id=?", (p["area_id"],))
         emoji = fila[0]["emoji"] if fila else "🌱"
@@ -244,6 +232,7 @@ if st.session_state.pagina == "hoy":
                 ejecutar("UPDATE items SET fecha=?, prioridad=? WHERE id=?", (hoy.isoformat(), n, item_id))
             st.rerun()
 
+# --- VISTA: CAPTURAR ---
 elif st.session_state.pagina == "capturar":
     hero("Capturar", "Saca todo de la cabeza.", "✍️")
     lista_areas = areas()
@@ -258,13 +247,14 @@ elif st.session_state.pagina == "capturar":
         c3, c4 = st.columns(2)
         fecha = c3.date_input("¿Para cuándo?", value=hoy)
         dur = c4.number_input("Duración (min)", 5, 480, 30, 5)
+        energia = st.select_slider("Energía", ["Baja", "Media", "Alta"], value="Media")
         if st.form_submit_button("Guardar 🌿"):
             if titulo.strip():
-                ejecutar("INSERT INTO items (titulo, tipo, area_id, fecha, duracion_min, creado) VALUES (?,?,?,?,?,?)",
-                         (titulo.strip(), tipo, mapa[area_et], fecha.isoformat(), int(dur), hoy.isoformat()))
+                ejecutar("INSERT INTO items (titulo, tipo, area_id, fecha, duracion_min, energia, creado) VALUES (?,?,?,?,?,?,?)",
+                         (titulo.strip(), tipo, mapa[area_et], fecha.isoformat(), int(dur), energia, hoy.isoformat()))
                 st.rerun()
 
-    st.markdown("### 📥 Bandeja")
+    st.markdown("### 📥 Bandeja de entrada")
     bandeja = consultar("SELECT * FROM items WHERE estado='pendiente' AND (fecha IS NULL OR fecha='')")
     if not bandeja: st.caption("Vacía. Respira 😌")
     for b in bandeja:
@@ -275,6 +265,7 @@ elif st.session_state.pagina == "capturar":
         if c3.button("🗑", key=f"bd_{b['id']}"):
             ejecutar("UPDATE items SET estado='archivado' WHERE id=?", (b["id"],)); st.rerun()
 
+# --- VISTA: ÁREAS ---
 elif st.session_state.pagina == "areas":
     hero("Áreas de vida", "Las partes de tu vida.", "🧩")
     for a in areas():
@@ -284,6 +275,7 @@ elif st.session_state.pagina == "areas":
             if st.button("Guardar", key=f"gm_{a['id']}"):
                 ejecutar("UPDATE areas SET meta=? WHERE id=?", (meta, a["id"])); st.toast("Guardado")
 
+# --- VISTA: PROYECTOS ---
 elif st.session_state.pagina == "proyectos":
     hero("Proyectos", "Cosas grandes de más de un día.", "📁")
     lista_areas = areas()
@@ -302,21 +294,22 @@ elif st.session_state.pagina == "proyectos":
         tareas = consultar("SELECT COUNT(*) c FROM items WHERE proyecto_id=? AND estado='pendiente'", (p["id"],))[0]["c"]
         st.markdown(f"<div class='card'><b>{p['nombre']}</b><br><span style='color:#888;font-size:12px'>{tareas} tareas abiertas</span></div>", unsafe_allow_html=True)
 
+# --- VISTA: PLAN SEMANAL ---
 elif st.session_state.pagina == "plan":
     hero("Plan Semanal", "Decide antes de que empiece.", "🗓️")
     st.session_state.setdefault("offset_semana", 0)
-    inicio_s = lunes() + timedelta(weeks=st.session_state["offset_semana"])
-    fin_s = inicio_s + timedelta(days=6)
+    inicio_off = lunes() + timedelta(weeks=st.session_state["offset_semana"])
+    fin_off = inicio_off + timedelta(days=6)
     
     b1, _, b3 = st.columns([0.25, 0.5, 0.25])
     if b1.button("← Antes"): st.session_state["offset_semana"] -= 1; st.rerun()
     if b3.button("Después →"): st.session_state["offset_semana"] += 1; st.rerun()
 
-    ini_iso, fin_iso = inicio_s.isoformat(), fin_s.isoformat()
+    ini_iso, fin_iso = inicio_off.isoformat(), fin_off.isoformat()
     cap = capacidad_semana(ini_iso)
     carga = carga_semana(ini_iso, fin_iso)
 
-    st.markdown(f"**Semana del {fecha_es(inicio_s)} al {fecha_es(fin_s)}**")
+    st.markdown(f"**Semana del {fecha_es(inicio_off)} al {fecha_es(fin_off)}**")
     
     with st.form("capacidad"):
         st.caption("Define cuántas horas tienes por área.")
@@ -334,8 +327,11 @@ elif st.session_state.pagina == "plan":
         elif pct > 0.85: st.warning("⚠️ Semana justa.")
         else: st.success("✅ Humanamente posible.")
 
+# --- VISTA: REVISIÓN ---
 elif st.session_state.pagina == "revision":
     hero("Revisión", "Cierra la semana sin culpa.", "🔄")
+    
+    # Historial breve
     with st.form("rev"):
         f1 = st.text_area("🌱 ¿Qué funcionó?")
         f2 = st.text_area("🍂 ¿Qué sobró?")
@@ -343,14 +339,20 @@ elif st.session_state.pagina == "revision":
         if st.form_submit_button("Cerrar semana 🌙"):
             ejecutar("INSERT INTO revisiones (fecha, funciono, sobro, animo, creado) VALUES (?,?,?,?,?)", (hoy.isoformat(), f1, f2, animo, hoy.isoformat()))
             st.success("Semana cerrada.")
+            
+    st.markdown("### 📜 Historial")
+    for r in consultar("SELECT * FROM revisiones ORDER BY id DESC LIMIT 3"):
+        with st.expander(f"{r['fecha']} · ánimo {r['animo']}/5"):
+            st.write(f"**Funcionó:** {r['funciono'] or '—'}")
+            st.write(f"**Sobró:** {r['sobro'] or '—'}")
 
-# 6. Barra de Navegación Inferior (6 botones en formato app)
+# 7. Barra de Navegación Inferior (6 botones)
 st.markdown("<br>", unsafe_allow_html=True)
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 with c1:
     if st.button("🌞\nHoy", use_container_width=True, type="primary" if st.session_state.pagina=="hoy" else "secondary"): st.session_state.pagina = "hoy"; st.rerun()
 with c2:
-    if st.button("✍️\nCapturar", use_container_width=True, type="primary" if st.session_state.pagina=="capturar" else "secondary"): st.session_state.pagina = "capturar"; st.rerun()
+    if st.button("✍️\nNota", use_container_width=True, type="primary" if st.session_state.pagina=="capturar" else "secondary"): st.session_state.pagina = "capturar"; st.rerun()
 with c3:
     if st.button("🧩\nÁreas", use_container_width=True, type="primary" if st.session_state.pagina=="areas" else "secondary"): st.session_state.pagina = "areas"; st.rerun()
 with c4:
