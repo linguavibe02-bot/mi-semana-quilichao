@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 MI SEMANA — "Tu vida entera en una semana realista"
-Fase 1 · Prototipo funcional (Streamlit + SQLite)
-Ejecutar:  streamlit run mi_semana.py
-Requisito: pip install streamlit
 """
 
 import json
 import sqlite3
 from datetime import date, timedelta
-
 import streamlit as st
 
 DB = "mi_semana.db"
@@ -17,7 +13,7 @@ DB = "mi_semana.db"
 st.set_page_config(
     page_title="Mi Semana · Quilichao",
     page_icon="🌿",
-    layout="centered", # Mobile-first
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 
@@ -43,7 +39,7 @@ CSS = """
     .hero-title { font-size: 24px; font-weight: 800; line-height: 1.1; margin: 0; }
     .hero-sub { font-size: 14px; opacity: .9; margin-top: 4px; }
 
-    /* MENÚ DE NAVEGACIÓN (Píldoras Horizontales) */
+    /* MENÚ DE NAVEGACIÓN */
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex; background-color: #E6E0D4; border-radius: 30px; padding: 5px; 
         width: 100%; margin: 0 auto 25px auto; gap: 2px; overflow-x: auto; flex-wrap: nowrap;
@@ -83,20 +79,12 @@ CSS = """
     
     div[data-testid="stForm"] { background: #FFF; border-radius: 16px; padding: 20px; border: 1px solid #EFE7DA; box-shadow: 0 4px 14px rgba(0,0,0,.02); }
     h3 { color: #123B33 !important; font-weight: 800; }
-    
-    /* Inputs */
-    .stTextInput > div > div > input { border-radius: 10px; border: 1px solid #EFE7DA; }
-    div[data-baseweb="select"] > div { border-radius: 10px !important; border: 1px solid #EFE7DA !important; background-color: #FBF7F0 !important; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- BASE DE DATOS
-AREAS_DEFECTO = [
-    ("Trabajo", "💼"), ("Hogar", "🏠"), ("Familia", "👨‍👩‍👧"),
-    ("Pareja", "💞"), ("Salud", "🩺"), ("Hobbies", "🎨"),
-    ("Aprendizaje", "📚"), ("Descanso", "🌙"),
-]
+AREAS_DEFECTO = [("Trabajo", "💼"), ("Hogar", "🏠"), ("Familia", "👨‍👩‍👧"), ("Pareja", "💞"), ("Salud", "🩺"), ("Hobbies", "🎨"), ("Aprendizaje", "📚"), ("Descanso", "🌙")]
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS config (clave TEXT PRIMARY KEY, valor TEXT);
@@ -129,7 +117,6 @@ def cfg_set(clave, valor):
 
 def areas(): return consultar("SELECT * FROM areas WHERE activa=1 ORDER BY id")
 
-# ---------------------------------------------------------------- FECHAS
 def lunes(d=None):
     d = d or date.today(); return d - timedelta(days=d.weekday())
 
@@ -153,7 +140,19 @@ def guardar_semana(inicio, capacidad=None, prioridades=None, nota=None):
     if nota is not None: actual["nota"] = nota
     ejecutar("INSERT OR REPLACE INTO semanas (inicio, capacidad, prioridades, nota) VALUES (?,?,?,?)", (inicio, actual["capacidad"], actual["prioridades"], actual["nota"]))
 
-# ---------------------------------------------------------------- UI BASE
+def cargar_ejemplos():
+    # Función mágica para que el dropdown de prioridades funcione al instante
+    ejemplos = [
+        ("Llamar al banco", "tarea", 1, 15, "Alta"),
+        ("Hacer mercado", "tarea", 2, 60, "Media"),
+        ("Caminar 20 min", "rutina", 5, 20, "Baja"),
+        ("Estudiar Python", "tarea", 7, 90, "Alta"),
+        ("Llamar a mamá", "tarea", 3, 30, "Media")
+    ]
+    for e in ejemplos:
+        ejecutar("INSERT INTO items (titulo, tipo, area_id, duracion_min, energia, fecha, estado) VALUES (?,?,?,?,?,?, 'pendiente')", 
+                 (e[0], e[1], e[2], e[3], e[4], date.today().isoformat()))
+
 def hero(titulo, subtitulo, emoji="🌿"):
     st.markdown(f'<div class="hero"><div class="hero-emoji">{emoji}</div><div><div class="hero-title">{titulo}</div><div class="hero-sub">{subtitulo}</div></div></div>', unsafe_allow_html=True)
 
@@ -183,14 +182,13 @@ hoy = date.today()
 inicio_semana = lunes(hoy)
 fin_semana = inicio_semana + timedelta(days=6)
 
-# MENÚ PRINCIPAL (Horizontal, reemplaza la barra lateral)
 nav = st.radio(
     "Navegar",
     ["🌞 Hoy", "✍️ Capturar", "🧩 Áreas", "📁 Proyectos", "🗓️ Plan", "🔄 Revisión"],
     horizontal=True,
     label_visibility="collapsed"
 )
-st.write("") # Espacio estético
+st.write("") 
 
 # ---------------------------------------------------------------- VISTAS
 
@@ -217,6 +215,13 @@ if nav == "🌞 Hoy":
     else: tarjeta(c2, "Semana", "—", "sin capacidad")
     tarjeta(c3, "Prioridades", f"{len(prios)}/3", "para hoy")
 
+    # EL ARREGLO DEL DROPDOWN: Si no hay tareas, mostramos un botón para cargar ejemplos
+    if pendientes == 0:
+        st.info("👋 No tienes tareas pendientes. Captura una arriba, o haz clic aquí para probar la app:")
+        if st.button("📥 Cargar 5 tareas de ejemplo", type="primary", use_container_width=True):
+            cargar_ejemplos()
+            st.rerun()
+
     st.markdown("### 🎯 Mis 3 prioridades de hoy")
     if not prios: st.info("Aún no eliges. Máximo 3: el resto puede esperar.")
     for p in prios:
@@ -228,23 +233,21 @@ if nav == "🌞 Hoy":
         if c.button("⏭", key=f"rep_{p['id']}"):
             ejecutar("UPDATE items SET fecha=?, prioridad=0 WHERE id=?", ((hoy + timedelta(days=1)).isoformat(), p["id"])); st.rerun()
 
-    with st.expander("➕ Cambiar prioridades", expanded=not prios):
-        opciones = consultar("SELECT id, titulo FROM items WHERE estado='pendiente' AND (fecha IS NULL OR fecha<=?)", (hoy.isoformat(),))
-        labels = {r["id"]: r["titulo"] for r in opciones}
-        sel = st.multiselect("Máximo 3.", list(labels.keys()), default=[p["id"] for p in prios], format_func=lambda i: labels[i], max_selections=3)
-        if st.button("Fijar prioridades", type="primary"):
-            ejecutar("UPDATE items SET prioridad=0 WHERE fecha=?", (hoy.isoformat(),))
-            for n, item_id in enumerate(sel, 1):
-                ejecutar("UPDATE items SET fecha=?, prioridad=? WHERE id=?", (hoy.isoformat(), n, item_id))
-            st.rerun()
-
-    st.markdown("### 📌 Compromisos fijos de hoy")
-    comp = consultar("SELECT * FROM items WHERE estado='pendiente' AND tipo='compromiso' AND fecha=?", (hoy.isoformat(),))
-    if not comp: st.caption("Sin compromisos fijos. Día flexible 😌")
-    for c in comp:
-        a, b = st.columns([0.82, 0.18]); a.write(f"• **{c['titulo']}**")
-        if b.button("✔", key=f"ch_{c['id']}"):
-            ejecutar("UPDATE items SET estado='hecho' WHERE id=?", (c["id"],)); st.rerun()
+    # SOLO MOSTRAMOS EL MULTISELECT SI HAY OPCIONES
+    opciones = consultar("SELECT id, titulo FROM items WHERE estado='pendiente' AND (fecha IS NULL OR fecha<=?)", (hoy.isoformat(),))
+    
+    if opciones:
+        with st.expander("➕ Elegir o cambiar prioridades de hoy", expanded=not prios):
+            labels = {r["id"]: r["titulo"] for r in opciones}
+            sel = st.multiselect("Máximo 3.", list(labels.keys()), default=[p["id"] for p in prios], format_func=lambda i: labels[i], max_selections=3)
+            if st.button("Fijar prioridades", type="primary"):
+                ejecutar("UPDATE items SET prioridad=0 WHERE fecha=?", (hoy.isoformat(),))
+                for n, item_id in enumerate(sel, 1):
+                    ejecutar("UPDATE items SET fecha=?, prioridad=? WHERE id=?", (hoy.isoformat(), n, item_id))
+                st.success("✅ Prioridades actualizadas")
+                st.rerun()
+    else:
+        st.caption("No hay tareas pendientes para priorizar.")
 
     st.markdown("### 🧮 ¿Tu semana es humanamente posible?")
     if total_cap_min == 0: st.info("Ve a **Plan** y dime cuántas horas reales tienes.")
@@ -344,6 +347,6 @@ elif nav == "🔄 Revisión":
 
     for r in consultar("SELECT * FROM revisiones ORDER BY id DESC LIMIT 5"):
         with st.expander(f"{r['fecha']} · ánimo {r['animo']}/5"):
-            st.write(f"**Funcionó:** {r['funcionoyo'] or '—'}") # Pequeño typo arreglado: funciono
+            st.write(f"**Funcionó:** {r['funciono'] or '—'}")
             st.write(f"**Sobró:** {r['sobro'] or '—'}")
             st.write(f"**Área abandonada:** {r['abandono'] or '—'}")
