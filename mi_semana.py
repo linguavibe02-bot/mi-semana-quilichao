@@ -21,7 +21,6 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
     html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
 
-    /* Header */
     .hero {
         background: linear-gradient(135deg, #1F6F5C, #2E8B74);
         padding: 20px 24px; border-radius: 20px; color: #fff; margin-bottom: 20px;
@@ -30,7 +29,6 @@ st.markdown("""
     .hero-title { font-size: 24px; font-weight: 800; margin: 0; }
     .hero-sub { font-size: 14px; opacity: .9; margin-top: 5px; }
 
-    /* Tarjetas */
     .card {
         background: #fff; border-radius: 16px; padding: 16px 18px;
         box-shadow: 0 4px 14px rgba(0,0,0,.05); border: 1px solid #EFE7DA; margin-bottom: 12px;
@@ -39,7 +37,6 @@ st.markdown("""
     .card-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #8A8071; }
     .card-pie { font-size: 13px; color: #5C564C; margin-top: 4px; }
 
-    /* Botones de Navegación Inferior */
     div.stButton > button {
         background-color: #fff; color: #1F6F5C; border: 1px solid #E4D9C6;
         border-radius: 12px; padding: 8px 2px; width: 100%; font-weight: 700; font-size: 11px;
@@ -48,42 +45,21 @@ st.markdown("""
     div.stButton > button[kind="primary"] {
         background-color: #1F6F5C; color: #fff; border: none; box-shadow: 0 4px 10px rgba(31,111,92,0.3);
     }
-    
-    /* Formularios */
     div[data-testid="stForm"] { background: #fff; border-radius: 16px; padding: 15px; border: 1px solid #EFE7DA; }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Base de Datos (Lógica Original Completa)
+# 3. Base de Datos
 DB = "mi_semana.db"
-
-AREAS_DEFECTO = [
-    ("Trabajo", "💼"), ("Hogar", "🏠"), ("Familia", "👨‍👩‍👧"),
-    ("Pareja", "💞"), ("Salud", "🩺"), ("Hobbies", "🎨"),
-    ("Aprendizaje", "📚"), ("Descanso", "🌙"),
-]
+AREAS_DEFECTO = [("Trabajo", "💼"), ("Hogar", "🏠"), ("Familia", "👨‍👩‍👧"), ("Pareja", "💞"), ("Salud", "🩺"), ("Hobbies", "🎨"), ("Aprendizaje", "📚"), ("Descanso", "🌙")]
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS config (clave TEXT PRIMARY KEY, valor TEXT);
-CREATE TABLE IF NOT EXISTS areas (
-  id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE NOT NULL,
-  emoji TEXT DEFAULT '🌱', meta TEXT DEFAULT '', activa INTEGER DEFAULT 1
-);
-CREATE TABLE IF NOT EXISTS proyectos (
-  id INTEGER PRIMARY KEY AUTOINCREMENT, area_id INTEGER, nombre TEXT NOT NULL,
-  nota TEXT DEFAULT '', estado TEXT DEFAULT 'activo', creado TEXT
-);
-CREATE TABLE IF NOT EXISTS items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, tipo TEXT DEFAULT 'tarea',
-  area_id INTEGER, proyecto_id INTEGER, fecha TEXT, duracion_min INTEGER DEFAULT 30,
-  energia TEXT DEFAULT 'Media', prioridad INTEGER DEFAULT 0, estado TEXT DEFAULT 'pendiente', creado TEXT
-);
-CREATE TABLE IF NOT EXISTS semanas (
-  inicio TEXT PRIMARY KEY, capacidad TEXT DEFAULT '{}', prioridades TEXT DEFAULT '[]', nota TEXT DEFAULT ''
-);
-CREATE TABLE IF NOT EXISTS revisiones (
-  id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT, funciono TEXT, sobro TEXT, abandono TEXT, animo INTEGER, creado TEXT
-);
+CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE NOT NULL, emoji TEXT DEFAULT '🌱', meta TEXT DEFAULT '', activa INTEGER DEFAULT 1);
+CREATE TABLE IF NOT EXISTS proyectos (id INTEGER PRIMARY KEY AUTOINCREMENT, area_id INTEGER, nombre TEXT NOT NULL, nota TEXT DEFAULT '', estado TEXT DEFAULT 'activo', creado TEXT);
+CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, tipo TEXT DEFAULT 'tarea', area_id INTEGER, proyecto_id INTEGER, fecha TEXT, duracion_min INTEGER DEFAULT 30, energia TEXT DEFAULT 'Media', prioridad INTEGER DEFAULT 0, estado TEXT DEFAULT 'pendiente', creado TEXT);
+CREATE TABLE IF NOT EXISTS semanas (inicio TEXT PRIMARY KEY, capacidad TEXT DEFAULT '{}', prioridades TEXT DEFAULT '[]', nota TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS revisiones (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT, funciono TEXT, sobro TEXT, abandono TEXT, animo INTEGER, creado TEXT);
 """
 
 def conn():
@@ -92,26 +68,15 @@ def conn():
     return c
 
 def ejecutar(sql, params=()):
-    c = conn()
-    cur = c.execute(sql, params)
-    c.commit()
-    last = cur.lastrowid
-    c.close()
-    return last
+    c = conn(); cur = c.execute(sql, params); c.commit(); last = cur.lastrowid; c.close(); return last
 
 def consultar(sql, params=()):
-    c = conn()
-    rows = c.execute(sql, params).fetchall()
-    c.close()
-    return rows
+    c = conn(); rows = c.execute(sql, params).fetchall(); c.close(); return rows
 
 def init_db():
-    c = conn()
-    c.executescript(ESQUEMA)
-    c.commit()
+    c = conn(); c.executescript(ESQUEMA); c.commit()
     if c.execute("SELECT COUNT(*) c FROM areas").fetchone()["c"] == 0:
-        c.executemany("INSERT INTO areas (nombre, emoji) VALUES (?,?)", AREAS_DEFECTO)
-        c.commit()
+        c.executemany("INSERT INTO areas (nombre, emoji) VALUES (?,?)", AREAS_DEFECTO); c.commit()
     c.close()
 
 def cfg_get(clave, default=None):
@@ -119,21 +84,15 @@ def cfg_get(clave, default=None):
     return json.loads(row[0]["valor"]) if row else default
 
 def cfg_set(clave, valor):
-    ejecutar(
-        "INSERT INTO config(clave,valor) VALUES(?,?) ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor",
-        (clave, json.dumps(valor, ensure_ascii=False)),
-    )
+    ejecutar("INSERT INTO config(clave,valor) VALUES(?,?) ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor", (clave, json.dumps(valor, ensure_ascii=False)))
 
-def areas():
-    return consultar("SELECT * FROM areas WHERE activa=1 ORDER BY id")
+def areas(): return consultar("SELECT * FROM areas WHERE activa=1 ORDER BY id")
 
 def lunes(d=None):
-    d = d or date.today()
-    return d - timedelta(days=d.weekday())
+    d = d or date.today(); return d - timedelta(days=d.weekday())
 
 def fecha_es(d):
-    dias = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
-    meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+    dias = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]; meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
     return f"{dias[d.weekday()]} {d.day} {meses[d.month - 1]}"
 
 def capacidad_semana(inicio):
@@ -153,16 +112,26 @@ def guardar_semana(inicio, capacidad=None, prioridades=None, nota=None):
     if nota is not None: actual["nota"] = nota
     ejecutar("INSERT OR REPLACE INTO semanas (inicio, capacidad, prioridades, nota) VALUES (?,?,?,?)", (inicio, actual["capacidad"], actual["prioridades"], actual["nota"]))
 
+def cargar_ejemplos():
+    ejemplos = [
+        ("Llamar al banco", "tarea", 1, 15, "Alta"),
+        ("Hacer mercado", "tarea", 2, 60, "Media"),
+        ("Caminar 20 min", "rutina", 5, 20, "Baja"),
+        ("Estudiar Python", "tarea", 7, 90, "Alta"),
+        ("Llamar a mamá", "tarea", 3, 30, "Media")
+    ]
+    for e in ejemplos:
+        ejecutar("INSERT INTO items (titulo, tipo, area_id, duracion_min, energia, fecha, estado) VALUES (?,?,?,?,?,?, 'pendiente')", 
+                 (e[0], e[1], e[2], e[3], e[4], date.today().isoformat()))
+
 init_db()
 
-# 4. UI Helpers
 def hero(titulo, subtitulo, emoji="🌿"):
     st.markdown(f'<div class="hero"><div style="font-size:32px; margin-bottom:5px;">{emoji}</div><div class="hero-title">{titulo}</div><div class="hero-sub">{subtitulo}</div></div>', unsafe_allow_html=True)
 
 def tarjeta(col, etiqueta, valor, pie=""):
     col.markdown(f'<div class="card" style="text-align:center;"><div class="card-lbl">{etiqueta}</div><div class="card-num">{valor}</div><div class="card-pie">{pie}</div></div>', unsafe_allow_html=True)
 
-# 5. Control de Navegación
 if "pagina" not in st.session_state: st.session_state.pagina = "hoy"
 hoy = date.today()
 
@@ -184,8 +153,6 @@ if not cfg_get("onboarding"):
 nombre = cfg_get("nombre")
 inicio_semana = lunes(hoy)
 fin_semana = inicio_semana + timedelta(days=6)
-
-# 6. VISTAS
 
 # --- VISTA: HOY ---
 if st.session_state.pagina == "hoy":
@@ -210,6 +177,13 @@ if st.session_state.pagina == "hoy":
     else: tarjeta(c2, "Semana", "—", "sin capacidad")
     tarjeta(c3, "Prioridades", f"{len(prios)}/3", "para hoy")
 
+    # BOTÓN DE PRUEBA (El que faltaba)
+    if pendientes == 0:
+        st.info("👋 No tienes tareas pendientes. Usa la barra de arriba para capturar una, o carga ejemplos para probar la app.")
+        if st.button("📥 Cargar 5 tareas de ejemplo", use_container_width=True):
+            cargar_ejemplos()
+            st.rerun()
+
     st.markdown("### 🎯 Mis 3 prioridades de hoy")
     if not prios: st.info("Aún no eliges. Máximo 3: el resto puede esperar.")
     for p in prios:
@@ -223,14 +197,19 @@ if st.session_state.pagina == "hoy":
             ejecutar("UPDATE items SET fecha=?, prioridad=0 WHERE id=?", ((hoy + timedelta(days=1)).isoformat(), p["id"])); st.rerun()
 
     with st.expander("➕ Cambiar prioridades", expanded=not prios):
-        opciones = consultar("SELECT id, titulo FROM items WHERE estado='pendiente' AND (fecha IS NULL OR fecha<=?)", (hoy.isoformat(),))
-        labels = {r["id"]: r["titulo"] for r in opciones}
-        sel = st.multiselect("Máximo 3.", list(labels.keys()), default=[p["id"] for p in prios], format_func=lambda i: labels[i], max_selections=3)
-        if st.button("Fijar prioridades"):
-            ejecutar("UPDATE items SET prioridad=0 WHERE fecha=?", (hoy.isoformat(),))
-            for n, item_id in enumerate(sel, 1):
-                ejecutar("UPDATE items SET fecha=?, prioridad=? WHERE id=?", (hoy.isoformat(), n, item_id))
-            st.rerun()
+        # CORRECCIÓN AQUÍ: Quitamos el filtro de fecha para que aparezcan TODAS las tareas pendientes
+        opciones = consultar("SELECT id, titulo FROM items WHERE estado='pendiente'")
+        
+        if not opciones:
+            st.caption("No hay tareas pendientes para elegir.")
+        else:
+            labels = {r["id"]: r["titulo"] for r in opciones}
+            sel = st.multiselect("Máximo 3.", list(labels.keys()), default=[p["id"] for p in prios], format_func=lambda i: labels[i], max_selections=3)
+            if st.button("Fijar prioridades", type="primary"):
+                ejecutar("UPDATE items SET prioridad=0 WHERE fecha=?", (hoy.isoformat(),))
+                for n, item_id in enumerate(sel, 1):
+                    ejecutar("UPDATE items SET fecha=?, prioridad=? WHERE id=?", (hoy.isoformat(), n, item_id))
+                st.rerun()
 
 # --- VISTA: CAPTURAR ---
 elif st.session_state.pagina == "capturar":
@@ -330,8 +309,6 @@ elif st.session_state.pagina == "plan":
 # --- VISTA: REVISIÓN ---
 elif st.session_state.pagina == "revision":
     hero("Revisión", "Cierra la semana sin culpa.", "🔄")
-    
-    # Historial breve
     with st.form("rev"):
         f1 = st.text_area("🌱 ¿Qué funcionó?")
         f2 = st.text_area("🍂 ¿Qué sobró?")
@@ -346,7 +323,7 @@ elif st.session_state.pagina == "revision":
             st.write(f"**Funcionó:** {r['funciono'] or '—'}")
             st.write(f"**Sobró:** {r['sobro'] or '—'}")
 
-# 7. Barra de Navegación Inferior (6 botones)
+# 7. Barra de Navegación Inferior
 st.markdown("<br>", unsafe_allow_html=True)
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 with c1:
