@@ -24,7 +24,7 @@ CSS = """
     
     html, body, [class*="css"] { font-family: 'Nunito', sans-serif !important; }
     .stApp { background-color: #FBF7F0; color: #123B33 !important; }
-    .block-container { max-width: 700px; padding-top: 1.5rem; padding-bottom: 4rem; }
+    .block-container { max-width: 700px; padding-top: 1rem; padding-bottom: 4rem; }
     
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
 
@@ -39,36 +39,66 @@ CSS = """
     .hero-title { font-size: 24px; font-weight: 800; line-height: 1.1; margin: 0; }
     .hero-sub { font-size: 14px; opacity: .9; margin-top: 4px; }
 
-    /* MENÚ DE NAVEGACIÓN */
+    /* ========================================================
+       MENÚ TIPO GRID (CUADRÍCULA LLAMATIVA)
+       ======================================================== */
     div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: flex; background-color: #E6E0D4; border-radius: 30px; padding: 5px; 
-        width: 100%; margin: 0 auto 25px auto; gap: 2px; overflow-x: auto; flex-wrap: nowrap;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 12px !important;
+        background: transparent !important;
+        margin-bottom: 25px !important;
     }
+    
+    /* Ocultar el circulito del radio button */
     div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child { display: none !important; }
     
+    /* Estilo de las Tarjetas del Menú */
     div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-        flex: 1; text-align: center; padding: 8px 0 !important; border-radius: 25px !important;
-        margin: 0 !important; background: transparent !important; border: none !important;
-        transition: all 0.3s !important; cursor: pointer; white-space: nowrap;
+        background: #FFFFFF !important;
+        border: 2px solid #EFE7DA !important;
+        border-radius: 16px !important;
+        padding: 15px 5px !important;
+        text-align: center !important;
+        height: 90px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer;
     }
+    
     div[data-testid="stRadio"] > div[role="radiogroup"] > label p {
-        color: #5C564C !important; font-weight: 700 !important; font-size: 13px !important; margin: 0 !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
-        background-color: #1F6F5C !important; box-shadow: 0 4px 10px rgba(31,111,92,0.25) !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] p {
-        color: #FFFFFF !important; font-weight: 800 !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        color: #5C564C !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
     }
 
-    /* Tarjetas (Cards) */
+    /* Tarjeta ACTIVA (Brilla en verde) */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
+        background: #1F6F5C !important;
+        border-color: #1F6F5C !important;
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(31,111,92,0.3) !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] p {
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+    }
+    /* ======================================================== */
+
+    /* Tarjetas de métricas */
     .card {
         background: #FFF; border-radius: 16px; padding: 16px 18px;
         box-shadow: 0 4px 14px rgba(0,0,0,.04); border: 1px solid #EFE7DA; margin-bottom: 12px;
     }
-    .card-num { font-size: 26px; font-weight: 800; color: #1F6F5C; }
-    .card-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #8A8071; font-weight: 700; }
-    .card-pie { font-size: 13px; color: #5C564C; margin-top: 4px; }
+    .card-num { font-size: 24px; font-weight: 800; color: #1F6F5C; }
+    .card-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8A8071; font-weight: 700; }
+    .card-pie { font-size: 12px; color: #5C564C; margin-top: 4px; }
 
     /* Botones y Formularios */
     .stButton>button {
@@ -78,7 +108,7 @@ CSS = """
     .stButton>button:hover { background: #1F6F5C; color: #FFF; border-color: #1F6F5C; }
     
     div[data-testid="stForm"] { background: #FFF; border-radius: 16px; padding: 20px; border: 1px solid #EFE7DA; box-shadow: 0 4px 14px rgba(0,0,0,.02); }
-    h3 { color: #123B33 !important; font-weight: 800; }
+    h3 { color: #123B33 !important; font-weight: 800; margin-top: 10px; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -141,7 +171,6 @@ def guardar_semana(inicio, capacidad=None, prioridades=None, nota=None):
     ejecutar("INSERT OR REPLACE INTO semanas (inicio, capacidad, prioridades, nota) VALUES (?,?,?,?)", (inicio, actual["capacidad"], actual["prioridades"], actual["nota"]))
 
 def cargar_ejemplos():
-    # Función mágica para que el dropdown de prioridades funcione al instante
     ejemplos = [
         ("Llamar al banco", "tarea", 1, 15, "Alta"),
         ("Hacer mercado", "tarea", 2, 60, "Media"),
@@ -163,7 +192,7 @@ init_db()
 
 # ---------------------------------------------------------------- ONBOARDING
 if not cfg_get("onboarding"):
-    hero("Mi Semana", "Tu vida entera en una semana realista. Sin culpa, sin listas infinitas.", "🌿")
+    hero("Mi Semana", "Tu vida entera en una semana realista.", "🌿")
     with st.form("onb"):
         nombre = st.text_input("¿Cómo te llamas?", placeholder="Ej: Camila")
         ciudad = st.text_input("¿Dónde vives?", value="Santander de Quilichao")
@@ -182,9 +211,10 @@ hoy = date.today()
 inicio_semana = lunes(hoy)
 fin_semana = inicio_semana + timedelta(days=6)
 
+# EL NUEVO MENÚ EN GRID
 nav = st.radio(
     "Navegar",
-    ["🌞 Hoy", "✍️ Capturar", "🧩 Áreas", "📁 Proyectos", "🗓️ Plan", "🔄 Revisión"],
+    ["🌞\nHoy", "✍️\nCapturar", "🧩\nÁreas", "📁\nProyectos", "🗓️\nPlan", "🔄\nRevisión"],
     horizontal=True,
     label_visibility="collapsed"
 )
@@ -192,7 +222,7 @@ st.write("")
 
 # ---------------------------------------------------------------- VISTAS
 
-if nav == "🌞 Hoy":
+if nav == "🌞\nHoy":
     hero(f"Hola, {nombre} 👋", f"{fecha_es(hoy).capitalize()} · {cfg_get('ciudad')}", "🌿")
 
     with st.form("captura_rapida", clear_on_submit=True):
@@ -215,9 +245,8 @@ if nav == "🌞 Hoy":
     else: tarjeta(c2, "Semana", "—", "sin capacidad")
     tarjeta(c3, "Prioridades", f"{len(prios)}/3", "para hoy")
 
-    # EL ARREGLO DEL DROPDOWN: Si no hay tareas, mostramos un botón para cargar ejemplos
     if pendientes == 0:
-        st.info("👋 No tienes tareas pendientes. Captura una arriba, o haz clic aquí para probar la app:")
+        st.info("👋 No tienes tareas pendientes. Haz clic aquí para probar la app:")
         if st.button("📥 Cargar 5 tareas de ejemplo", type="primary", use_container_width=True):
             cargar_ejemplos()
             st.rerun()
@@ -233,7 +262,6 @@ if nav == "🌞 Hoy":
         if c.button("⏭", key=f"rep_{p['id']}"):
             ejecutar("UPDATE items SET fecha=?, prioridad=0 WHERE id=?", ((hoy + timedelta(days=1)).isoformat(), p["id"])); st.rerun()
 
-    # SOLO MOSTRAMOS EL MULTISELECT SI HAY OPCIONES
     opciones = consultar("SELECT id, titulo FROM items WHERE estado='pendiente' AND (fecha IS NULL OR fecha<=?)", (hoy.isoformat(),))
     
     if opciones:
@@ -257,7 +285,7 @@ if nav == "🌞 Hoy":
         estado = "✅ Va bien" if pct <= 0.85 else ("⚠️ Justa" if pct <= 1.0 else "🚨 Sobrecargada")
         st.caption(f"{carga/60:.1f} h de {total_cap_min/60:.0f} h reales · {estado}")
 
-elif nav == "✍️ Capturar":
+elif nav == "✍️\nCapturar":
     hero("Capturar", "Saca todo de la cabeza.", "✍️")
     lista_areas = areas(); etiquetas = [f"{a['emoji']} {a['nombre']}" for a in lista_areas]; mapa = {et: a["id"] for et, a in zip(etiquetas, lista_areas)}
     with st.form("nuevo_item", clear_on_submit=True):
@@ -278,7 +306,7 @@ elif nav == "✍️ Capturar":
         if c3.button("Mañana", key=f"bm_{b['id']}"): ejecutar("UPDATE items SET fecha=? WHERE id=?", (man_s, b["id"])); st.rerun()
         if c4.button("🗑", key=f"bd_{b['id']}"): ejecutar("UPDATE items SET estado='archivado' WHERE id=?", (b["id"],)); st.rerun()
 
-elif nav == "🧩 Áreas":
+elif nav == "🧩\nÁreas":
     hero("Áreas de vida", "Las partes de tu vida.", "🧩")
     for a in areas():
         pend = consultar("SELECT COUNT(*) c FROM items WHERE estado='pendiente' AND area_id=?", (a["id"],))[0]["c"]
@@ -293,7 +321,7 @@ elif nav == "🧩 Áreas":
                 try: ejecutar("INSERT INTO areas (nombre, emoji, meta) VALUES (?,?,?)", (n.strip(), e.strip() or "🌱", m.strip())); st.rerun()
                 except sqlite3.IntegrityError: st.warning("Ya existe un área.")
 
-elif nav == "📁 Proyectos":
+elif nav == "📁\nProyectos":
     hero("Proyectos", "Cosas grandes de más de un día.", "📁")
     lista_areas = areas(); etiquetas = [f"{a['emoji']} {a['nombre']}" for a in lista_areas]; mapa = {et: a["id"] for et, a in zip(etiquetas, lista_areas)}
     with st.form("nuevo_proyecto", clear_on_submit=True):
@@ -304,7 +332,7 @@ elif nav == "📁 Proyectos":
         abiertas = consultar("SELECT COUNT(*) c FROM items WHERE proyecto_id=? AND estado='pendiente'", (p["id"],))[0]["c"]
         st.markdown(f'<div class="card"><b>{p["nombre"]}</b><br><span style="color:#8A8071;font-size:13px">{abiertas} tareas abiertas</span></div>', unsafe_allow_html=True)
 
-elif nav == "🗓️ Plan":
+elif nav == "🗓️\nPlan":
     st.session_state.setdefault("offset_semana", 0)
     inicio = lunes() + timedelta(weeks=st.session_state["offset_semana"]); fin = inicio + timedelta(days=6)
     hero("Plan semanal", f"Del {fecha_es(inicio)} al {fecha_es(fin)}", "🗓️")
@@ -334,7 +362,7 @@ elif nav == "🗓️ Plan":
         elif total_carga / total_cap > 0.85: st.warning("⚠️ Semana justa. Evita agregar cosas.")
         else: st.success("✅ Semana humanamente posible.")
 
-elif nav == "🔄 Revisión":
+elif nav == "🔄\nRevisión":
     hero("Revisión", "Cierra la semana sin juicio.", "🔄")
     hechos = consultar("SELECT COUNT(*) c FROM items WHERE estado='hecho'")[0]["c"]
     c1, c2 = st.columns(2); tarjeta(c1, "Cosas hechas", hechos, "en total"); tarjeta(c2, "Semana", fecha_es(lunes(hoy)).capitalize(), "para revisar")
